@@ -1,6 +1,8 @@
 ﻿[B]1.0.11[/B]
-- Kezdőképernyő: film és sorozat keresés, hangalapú keresés (mikrofon gomb a Kodi billentyűzeten)
-- Új Felfedezés menü: filmek és sorozatok rendezési szempontok szerint
+- Csempés (poszter) kezdőképernyő
+- Új Felfedezés oldal: legújabb filmek és sorozatok poszterekkel
+- Hangalapú keresés (mikrofon gomb a Kodi billentyűzeten) és keresés filmekre, sorozatokra
+- Csempe nézet kikapcsolható a beállításokban
 
 [B]1.0.10[/B]
 - Átállás resolveurl-re

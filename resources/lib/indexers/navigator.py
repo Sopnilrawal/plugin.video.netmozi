@@ -34,6 +34,9 @@ addonFanart = xbmcaddon.Addon().getAddonInfo('fanart')
 
 base_url = 'https://netmozi.com/'
 
+def tile(name):
+    return os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources', 'media', '%s.png' % name)
+
 class navigator:
     def __init__(self):
         try:
@@ -47,24 +50,29 @@ class navigator:
         self.searchFileName = os.path.join(self.base_path, "search.history")
 
     def root(self):
-        self.addDirectoryItem('[B]Film keresés[/B]', 'newsearch&type=1', '', 'DefaultAddonsSearch.png')
-        self.addDirectoryItem('[B]Sorozat keresés[/B]', 'newsearch&type=2', '', 'DefaultAddonsSearch.png')
-        self.addDirectoryItem('[B]Film keresés hanggal[/B]', 'voicesearch&type=1', '', 'DefaultAddonsSearch.png')
-        self.addDirectoryItem('[B]Sorozat keresés hanggal[/B]', 'voicesearch&type=2', '', 'DefaultAddonsSearch.png')
-        menuItems = [('discover', 'Felfedezés'), ('base&type=1', 'Filmek'), ('base&type=2', 'Sorozatok'), ('search', 'Keresési előzmények')]
-        for menuItem, name in menuItems:
-            self.addDirectoryItem(name, menuItem, '', 'DefaultFolder.png')
-        self.endDirectory()
+        self.addDirectoryItem('Felfedezés', 'discover', tile('discover'), 'DefaultFolder.png')
+        self.addDirectoryItem('Keresés hanggal', 'voicesearch', tile('voice'), 'DefaultAddonsSearch.png')
+        self.addDirectoryItem('Keresés', 'newsearch', tile('search'), 'DefaultAddonsSearch.png')
+        self.addDirectoryItem('Filmek', 'base&type=1', tile('movies'), 'DefaultMovies.png')
+        self.addDirectoryItem('Sorozatok', 'base&type=2', tile('series'), 'DefaultTVShows.png')
+        self.addDirectoryItem('Keresési előzmények', 'search', tile('history'), 'DefaultFolder.png')
+        self.endDirectory(type='movies', tiles=True)
 
     def getDiscover(self):
+        self.addDirectoryItem('Keresés hanggal', 'voicesearch', tile('voice'), 'DefaultAddonsSearch.png')
+        self.addDirectoryItem('Keresés', 'newsearch', tile('search'), 'DefaultAddonsSearch.png')
         try:
-            orders = self.getOrders()
+            order = self.getOrders()[0][1]
         except:
-            orders = []
-        for tipus, tipusName in (('1', 'Filmek'), ('2', 'Sorozatok')):
-            for name, order in orders:
-                self.addDirectoryItem('%s: %s' % (tipusName, name), 'movies&page=1&type=%s&order=%s&search=' % (tipus, order), '', 'DefaultMovies.png' if tipus == '1' else 'DefaultTVShows.png')
-        self.endDirectory()
+            order = '1'
+        for tipus, moreName in (('1', 'Több film'), ('2', 'Több sorozat')):
+            try:
+                url_content = client.request('%s?page=1&type=%s&order=%s&search=' % (base_url, tipus, order))
+                self.addMovieItems(url_content, tipus)
+            except:
+                pass
+            self.addDirectoryItem(moreName, 'movies&page=1&type=%s&order=%s&search=' % (tipus, order), tile('more'), 'DefaultFolder.png')
+        self.endDirectory(type='movies', tiles=True)
 
     def getSearches(self):
         self.addDirectoryItem('Új keresés', 'newsearch', '', 'DefaultFolder.png')
@@ -111,7 +119,7 @@ class navigator:
     def doSearch(self, tipus='', voice=False):
         if tipus == None:
             tipus = ''
-        what = u'sorozat' if tipus == '2' else u'film'
+        what = {'1': u'film', '2': u'sorozat'}.get(tipus, u'film vagy sorozat')
         if voice:
             search_text = self.getSearchText(u'Nyomd meg a mikrofon gombot, \u00E9s mondd ki a %s c\u00EDm\u00E9t' % what)
         else:
@@ -133,34 +141,37 @@ class navigator:
                 result=py2_encode(divs[1]).strip()
         return result
 
+    def addMovieItems(self, url_content, tipus):
+        movies = client.parseDOM(url_content, 'div', attrs={'class': 'col-sm-4 col_main'})
+        for movie in movies:
+            tempTitle = client.parseDOM(movie, 'div', attrs={'class': 'col_name'})[0]
+            title = py2_encode(client.replaceHTMLCodes(tempTitle)).replace('<small>(sorozat)</small>', '')
+            isSorozat = "(sorozat)" in tempTitle
+            sorozatLabel = ''
+            if isSorozat and tipus != "2":
+                sorozatLabel = ' [COLOR yellow][I]sorozat[/I][/COLOR]'
+            url = client.parseDOM(movie, 'a', attrs={'class': 'col_a'}, ret='href')[0]
+            thumbDiv = client.parseDOM(movie, 'div', attrs={'class': 'col-sm-6'})[0]
+            thumb = 'https:'+client.parseDOM(thumbDiv, 'img', ret='src')[0]
+            infoDiv = client.parseDOM(movie, 'div', attrs={'class': 'col-sm-6'})[1]
+            infoRows = client.parseDOM(infoDiv, 'div', attrs={'class': 'row'})
+            year = re.sub('<.*>', '', py2_encode(client.replaceHTMLCodes(infoRows[0]))).strip()
+            duration = int(re.sub('<.*>', '', py2_encode(client.replaceHTMLCodes(infoRows[1]))).strip().replace(' perc',''))*60
+            linkcount = re.sub('<.*>', '', py2_encode(client.replaceHTMLCodes(infoRows[2]))).strip().replace('db', '')
+            action='series' if isSorozat else 'movie'
+            self.addDirectoryItem('%s (%s)%s | [COLOR limegreen]%s link[/COLOR]' %(title, year, sorozatLabel, linkcount), '%s&url=%s' % (action, url), thumb, 'DefaultMovies.png' if isSorozat else 'DefaultTVShows.png', meta={'title': title, 'duration': duration, 'fanart': thumb})
+        return len(movies)
+
     def getMovies(self, tipus, page, order, search):
         if search == None:
             search = ''
         url_content = client.request('%s?page=%s&type=%s&order=%s&search=%s' % (base_url, page, tipus, order, quote_plus(search)))
-        movies = client.parseDOM(url_content, 'div', attrs={'class': 'col-sm-4 col_main'})
-        if len(movies)>0:
-            for movie in movies:
-                tempTitle = client.parseDOM(movie, 'div', attrs={'class': 'col_name'})[0]
-                title = py2_encode(client.replaceHTMLCodes(tempTitle)).replace('<small>(sorozat)</small>', '')
-                isSorozat = "(sorozat)" in tempTitle
-                sorozatLabel = ''
-                if isSorozat and tipus != "2":
-                    sorozatLabel = ' [COLOR yellow][I]sorozat[/I][/COLOR]'
-                url = client.parseDOM(movie, 'a', attrs={'class': 'col_a'}, ret='href')[0]
-                thumbDiv = client.parseDOM(movie, 'div', attrs={'class': 'col-sm-6'})[0]
-                thumb = 'https:'+client.parseDOM(thumbDiv, 'img', ret='src')[0]
-                infoDiv = client.parseDOM(movie, 'div', attrs={'class': 'col-sm-6'})[1]
-                infoRows = client.parseDOM(infoDiv, 'div', attrs={'class': 'row'})
-                year = re.sub('<.*>', '', py2_encode(client.replaceHTMLCodes(infoRows[0]))).strip()
-                duration = int(re.sub('<.*>', '', py2_encode(client.replaceHTMLCodes(infoRows[1]))).strip().replace(' perc',''))*60
-                linkcount = re.sub('<.*>', '', py2_encode(client.replaceHTMLCodes(infoRows[2]))).strip().replace('db', '')
-                action='series' if isSorozat else 'movie'
-                self.addDirectoryItem('%s (%s)%s | [COLOR limegreen]%s link[/COLOR]' %(title, year, sorozatLabel, linkcount), '%s&url=%s' % (action, url), thumb, 'DefaultMovies.png' if isSorozat else 'DefaultTVShows.png', meta={'title': title, 'duration': duration, 'fanart': thumb})
+        if self.addMovieItems(url_content, tipus) > 0:
             pager = client.parseDOM(url_content, 'select', attrs={'name': 'page'})[0]
             options = client.parseDOM(pager, 'option', ret='value')
             if (int(options[-1]) > int(page)):
-                self.addDirectoryItem(u'[I]K\u00F6vetkez\u0151 oldal  (%d/%s)>>[/I]' %(int(page)+1, options[-1]), 'movies&page=%d&type=%s&order=%s&search=%s' % (int(page)+1, tipus, order, search), '', 'DefaultFolder.png')
-            self.endDirectory(type="movies")
+                self.addDirectoryItem(u'[I]K\u00F6vetkez\u0151 oldal  (%d/%s)>>[/I]' %(int(page)+1, options[-1]), 'movies&page=%d&type=%s&order=%s&search=%s' % (int(page)+1, tipus, order, search), tile('more'), 'DefaultFolder.png')
+            self.endDirectory(type="movies", tiles=True)
         else:
             xbmcgui.Dialog().ok('NetMozi', 'Nem található forrás!')
             xbmcplugin.setResolvedUrl(int(sys.argv[1]), False, xbmcgui.ListItem())
@@ -308,10 +319,12 @@ class navigator:
         xbmcplugin.addDirectoryItem(handle=syshandle, url=url, listitem=item, isFolder=isFolder)
 
 
-    def endDirectory(self, type='addons'):
+    def endDirectory(self, type='addons', tiles=False):
         xbmcplugin.setContent(syshandle, type)
         #xbmcplugin.addSortMethod(syshandle, xbmcplugin.SORT_METHOD_TITLE)
         xbmcplugin.endOfDirectory(syshandle, cacheToDisc=True)
+        if tiles and xbmcaddon.Addon().getSetting('tile_view') != 'false':
+            xbmc.executebuiltin('Container.SetViewMode(%s)' % (xbmcaddon.Addon().getSetting('tile_view_id') or '500'))
 
     def getSearchText(self, heading=u'Add meg a keresend\u0151 film c\xEDm\xE9t'):
         search_text = ''

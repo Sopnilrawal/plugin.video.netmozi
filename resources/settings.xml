@@ -6,4 +6,8 @@
 		<setting type="text" id="logintimestamp" visible="false" default="0" />
 		<setting type="text" id="logincookie" visible="false" default="" />
 	</category>
+	<category label="Megjelenés">
+		<setting label="Csempe nézet (poszterek)" type="bool" id="tile_view" default="true"/>
+		<setting label="Nézet azonosító (Estuary: 500 = Wall, 51 = Poster)" type="number" id="tile_view_id" default="500" enable="eq(-1,true)"/>
+	</category>
 </settings>

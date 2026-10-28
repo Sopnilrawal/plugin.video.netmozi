@@ -11,7 +11,7 @@
 		<description lang="en">Nézd meg a filmeket, sorozatokat a http://www.netmozi.com oldalról!</description>
 		<language>hu</language>
 		<platform>all</platform>
-		<news>- Kezdőképernyő: film/sorozat keresés (hanggal is), Felfedezés menü</news>
+		<news>- Csempés kezdőképernyő, Felfedezés oldal, hangalapú keresés</news>
 		<assets>
 		  <icon>icon.png</icon>
 		  <fanart></fanart>
