@@ -115,7 +115,7 @@ class navigator:
         if voice:
             search_text = self.getSearchText(u'Nyomd meg a mikrofon gombot, \u00E9s mondd ki a %s c\u00EDm\u00E9t' % what)
         else:
-            search_text = self.getSearchText(u'Add meg a keresend\xF5 %s c\xEDm\xE9t' % what)
+            search_text = self.getSearchText(u'Add meg a keresend\u0151 %s c\xEDm\xE9t' % what)
         if search_text != '':
             if not os.path.exists(self.base_path):
                 os.mkdir(self.base_path)
@@ -313,7 +313,7 @@ class navigator:
         #xbmcplugin.addSortMethod(syshandle, xbmcplugin.SORT_METHOD_TITLE)
         xbmcplugin.endOfDirectory(syshandle, cacheToDisc=True)
 
-    def getSearchText(self, heading=u'Add meg a keresend\xF5 film c\xEDm\xE9t'):
+    def getSearchText(self, heading=u'Add meg a keresend\u0151 film c\xEDm\xE9t'):
         search_text = ''
         # Kodi's virtual keyboard: on Android (e.g. NVIDIA Shield) Kodi 19+ shows a microphone button for voice typing
         keyb = xbmc.Keyboard('', heading)
