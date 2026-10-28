@@ -55,7 +55,7 @@ class DiscoverFragment : BrowseSupportFragment() {
     }
 
     private fun load() = lifecycleScope.launch {
-        val loaded = withContext(Dispatchers.IO) {
+        val loaded: List<Pair<String, List<Title>>>? = withContext(Dispatchers.IO) {
             runCatching {
                 val orders = NetMozi.orders().ifEmpty { listOf("" to "1") }.take(3)
                 orders.flatMap { (orderName, order) ->
