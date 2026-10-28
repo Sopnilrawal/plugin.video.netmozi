@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NetMozi</string>
+    <string name="channel_name">NetMozi Felfedezés</string>
+    <string name="search_hint">Film vagy sorozat címe</string>
+    <string name="voice_search">Keresés hanggal</string>
+    <string name="search">Keresés</string>
+    <string name="kodi_settings">Kodi beállítás</string>
+    <string name="row_start">Keresés</string>
+    <string name="movies">Filmek</string>
+    <string name="series">Sorozatok</string>
+    <string name="series_tag">sorozat</string>
+    <string name="kodi_missing">A Kodi nincs telepítve.</string>
+    <string name="kodi_rpc_failed">Nem sikerült megnyitni a NetMozit a Kodiban. Kapcsold be: Kodi → Beállítások → Szolgáltatások → Vezérlés → Távvezérlés HTTP-n keresztül, és add meg a felhasználónevet/jelszót a Kodi beállításnál.</string>
+    <string name="load_failed">Nem sikerült betölteni a listát.</string>
+    <string name="kodi_port">Port (alapértelmezett 8080)</string>
+    <string name="kodi_user">Felhasználónév</string>
+    <string name="kodi_pass">Jelszó</string>
+    <string name="save">Mentés</string>
+    <string name="cancel">Mégse</string>
+</resources>
