@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.netmozi" name="NetMozi" version="1.0.10" provider-name="vargalex">
+<addon id="plugin.video.netmozi" name="NetMozi" version="1.0.11" provider-name="vargalex">
 	<requires>
 		<import addon="script.module.resolveurl" version="5.1.00"/>
 	</requires>
@@ -11,7 +11,7 @@
 		<description lang="en">Nézd meg a filmeket, sorozatokat a http://www.netmozi.com oldalról!</description>
 		<language>hu</language>
 		<platform>all</platform>
-		<news>- Átállás resolveurl-re</news>
+		<news>- Kezdőképernyő: film/sorozat keresés (hanggal is), Felfedezés menü</news>
 		<assets>
 		  <icon>icon.png</icon>
 		  <fanart></fanart>

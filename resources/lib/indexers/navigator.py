@@ -47,9 +47,23 @@ class navigator:
         self.searchFileName = os.path.join(self.base_path, "search.history")
 
     def root(self):
-        menuItems = {'base&type=1': 'Filmek', 'base&type=2': 'Sorozatok', 'search': 'Keresés'}
-        for menuItem in sorted(menuItems):
-            self.addDirectoryItem(menuItems[menuItem], menuItem, '', 'DefaultFolder.png')
+        self.addDirectoryItem('[B]Film keresés[/B]', 'newsearch&type=1', '', 'DefaultAddonsSearch.png')
+        self.addDirectoryItem('[B]Sorozat keresés[/B]', 'newsearch&type=2', '', 'DefaultAddonsSearch.png')
+        self.addDirectoryItem('[B]Film keresés hanggal[/B]', 'voicesearch&type=1', '', 'DefaultAddonsSearch.png')
+        self.addDirectoryItem('[B]Sorozat keresés hanggal[/B]', 'voicesearch&type=2', '', 'DefaultAddonsSearch.png')
+        menuItems = [('discover', 'Felfedezés'), ('base&type=1', 'Filmek'), ('base&type=2', 'Sorozatok'), ('search', 'Keresési előzmények')]
+        for menuItem, name in menuItems:
+            self.addDirectoryItem(name, menuItem, '', 'DefaultFolder.png')
+        self.endDirectory()
+
+    def getDiscover(self):
+        try:
+            orders = self.getOrders()
+        except:
+            orders = []
+        for tipus, tipusName in (('1', 'Filmek'), ('2', 'Sorozatok')):
+            for name, order in orders:
+                self.addDirectoryItem('%s: %s' % (tipusName, name), 'movies&page=1&type=%s&order=%s&search=' % (tipus, order), '', 'DefaultMovies.png' if tipus == '1' else 'DefaultTVShows.png')
         self.endDirectory()
 
     def getSearches(self):
@@ -72,31 +86,43 @@ class navigator:
             pass   
         self.endDirectory()
 
-    def getOrderTypes(self, tipus):
+    def getOrders(self):
+        orders = []
         url_content = client.request(base_url)
         btnGroup = client.parseDOM(url_content, 'div', attrs={'class': 'btn-group'})[0]
         labels = client.parseDOM(btnGroup, 'label')
         for label in labels:
             name = client.parseDOM(label, 'input', attrs={'class': 'orderRadioInput'})
             if len(name) > 0:
-                name = name[0].strip()
+                name = py2_encode(name[0].strip())
                 order = client.parseDOM(label, 'input', attrs={'class': 'orderRadioInput'}, ret='value')[0]
-                self.addDirectoryItem(name, 'movies&page=1&type=%s&order=%s&search=' % (tipus, order), '', 'DefaultFolder.png')
+                orders.append((name, order))
+        return orders
+
+    def getOrderTypes(self, tipus):
+        for name, order in self.getOrders():
+            self.addDirectoryItem(name, 'movies&page=1&type=%s&order=%s&search=' % (tipus, order), '', 'DefaultFolder.png')
         self.endDirectory()
 
     def deleteSearchHistory(self):
         if os.path.exists(self.searchFileName):
             os.remove(self.searchFileName)
 
-    def doSearch(self):
-        search_text = self.getSearchText()
+    def doSearch(self, tipus='', voice=False):
+        if tipus == None:
+            tipus = ''
+        what = u'sorozat' if tipus == '2' else u'film'
+        if voice:
+            search_text = self.getSearchText(u'Nyomd meg a mikrofon gombot, \u00E9s mondd ki a %s c\u00EDm\u00E9t' % what)
+        else:
+            search_text = self.getSearchText(u'Add meg a keresend\xF5 %s c\xEDm\xE9t' % what)
         if search_text != '':
             if not os.path.exists(self.base_path):
                 os.mkdir(self.base_path)
             file = open(self.searchFileName, "a")
             file.write("%s\n" % search_text)
             file.close()
-            self.getMovies('', 1, 1, search_text)
+            self.getMovies(tipus, 1, 1, search_text)
 
     def getInfo(self, sm8, searchStr):
         result = "0"
@@ -287,12 +313,13 @@ class navigator:
         #xbmcplugin.addSortMethod(syshandle, xbmcplugin.SORT_METHOD_TITLE)
         xbmcplugin.endOfDirectory(syshandle, cacheToDisc=True)
 
-    def getSearchText(self):
+    def getSearchText(self, heading=u'Add meg a keresend\xF5 film c\xEDm\xE9t'):
         search_text = ''
-        keyb = xbmc.Keyboard('',u'Add meg a keresend\xF5 film c\xEDm\xE9t')
+        # Kodi's virtual keyboard: on Android (e.g. NVIDIA Shield) Kodi 19+ shows a microphone button for voice typing
+        keyb = xbmc.Keyboard('', heading)
         keyb.doModal()
 
         if (keyb.isConfirmed()):
-            search_text = keyb.getText()
+            search_text = keyb.getText().strip()
 
         return search_text

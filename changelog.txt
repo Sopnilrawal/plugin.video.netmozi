@@ -1,4 +1,8 @@
-﻿[B]1.0.10[/B]
+﻿[B]1.0.11[/B]
+- Kezdőképernyő: film és sorozat keresés, hangalapú keresés (mikrofon gomb a Kodi billentyűzeten)
+- Új Felfedezés menü: filmek és sorozatok rendezési szempontok szerint
+
+[B]1.0.10[/B]
 - Átállás resolveurl-re
 
 [B]1.0.9[/B]

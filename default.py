@@ -47,6 +47,9 @@ serie = params.get('serie')
 if action == None:
     navigator.navigator().root()
 
+elif action == 'discover':
+    navigator.navigator().getDiscover()
+
 elif action == 'base':
     navigator.navigator().getOrderTypes(tipus)
 
@@ -70,7 +73,10 @@ elif action == 'episodes':
     navigator.navigator().getEpisodes(url, serie)
 
 elif action == 'newsearch':
-    navigator.navigator().doSearch()
+    navigator.navigator().doSearch(tipus)
+
+elif action == 'voicesearch':
+    navigator.navigator().doSearch(tipus, voice=True)
 
 elif action == 'deletesearchhistory':
     navigator.navigator().deleteSearchHistory()
