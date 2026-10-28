@@ -55,17 +55,7 @@ class DiscoverFragment : BrowseSupportFragment() {
     }
 
     private fun load() = lifecycleScope.launch {
-        val loaded: List<Pair<String, List<Title>>>? = withContext(Dispatchers.IO) {
-            runCatching {
-                val orders = NetMozi.orders().ifEmpty { listOf("" to "1") }.take(3)
-                orders.flatMap { (orderName, order) ->
-                    listOf(NetMozi.TYPE_MOVIES to R.string.movies, NetMozi.TYPE_SERIES to R.string.series).map { (type, label) ->
-                        val header = if (orderName.isEmpty()) getString(label) else "${getString(label)}: $orderName"
-                        header to runCatching { NetMozi.list(type, order) }.getOrDefault(emptyList())
-                    }
-                }
-            }.getOrNull()
-        }
+        val loaded = withContext(Dispatchers.IO) { fetchRows() }
         if (loaded == null) {
             Toast.makeText(requireContext(), R.string.load_failed, Toast.LENGTH_LONG).show()
             return@launch
@@ -74,6 +64,29 @@ class DiscoverFragment : BrowseSupportFragment() {
             val row = ArrayObjectAdapter(CardPresenter()).apply { titles.forEach { add(it) } }
             rows.add(ListRow(HeaderItem(i + 1L, header), row))
         }
+    }
+
+    /** Poster rows for the first sort orders of the site, or null if the site could not be reached. */
+    private fun fetchRows(): List<Pair<String, List<Title>>>? {
+        val orders: List<Pair<String, String>> = try {
+            NetMozi.orders().ifEmpty { listOf("" to "1") }.take(3)
+        } catch (e: Exception) {
+            return null
+        }
+        val types: List<Pair<String, Int>> = listOf(NetMozi.TYPE_MOVIES to R.string.movies, NetMozi.TYPE_SERIES to R.string.series)
+        val result = ArrayList<Pair<String, List<Title>>>()
+        for ((orderName, order) in orders) {
+            for ((type, label) in types) {
+                val header = if (orderName.isEmpty()) getString(label) else "${getString(label)}: $orderName"
+                val titles: List<Title> = try {
+                    NetMozi.list(type, order)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+                result.add(header to titles)
+            }
+        }
+        return result
     }
 
     private fun onClick(item: Any?) {
