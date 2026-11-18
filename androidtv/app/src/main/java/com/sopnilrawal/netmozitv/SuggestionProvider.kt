@@ -8,7 +8,7 @@ import android.database.MatrixCursor
 import android.net.Uri
 import android.provider.BaseColumns
 
-/** Answers Android TV global (voice) search with matching NetMozi titles. */
+/** Answers Android TV global (voice) search with matching TMDB titles that open in this app. */
 class SuggestionProvider : ContentProvider() {
     override fun onCreate() = true
 
@@ -26,17 +26,18 @@ class SuggestionProvider : ContentProvider() {
         )
         val query = selectionArgs?.firstOrNull()?.trim() ?: uri.lastPathSegment?.trim().orEmpty()
         if (query.length < 2 || query == SearchManager.SUGGEST_URI_PATH_QUERY) return cursor
-        val titles = runCatching { NetMozi.list(NetMozi.TYPE_ALL, search = query) }.getOrDefault(emptyList())
-        titles.take(20).forEachIndexed { i, t ->
+        Prefs(context!!).applyToTmdb()
+        val titles = runCatching { Tmdb.search(query) }.getOrDefault(emptyList())
+        titles.take(20).forEachIndexed { i, m ->
             cursor.addRow(
                 arrayOf(
                     i,
-                    t.name,
-                    if (t.isSeries) context!!.getString(R.string.series_tag) else context!!.getString(R.string.app_name),
-                    t.thumb,
-                    t.year.toIntOrNull(),
+                    m.title,
+                    if (m.isTv) "TV show" else "Movie",
+                    m.posterUrl,
+                    m.year.toIntOrNull(),
                     "video/mp4",
-                    ChannelSync.kodiUri(t.kodiPath).toString(),
+                    "netmozitv://title?type=${m.type}&id=${m.id}",
                 )
             )
         }

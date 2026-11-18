@@ -20,10 +20,9 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
 
-/** Publishes the "NetMozi Felfedezés" row of tiles on the Android TV home screen. */
+/** Publishes the "NetMozi Discover" row of tiles on the Android TV home screen. */
 object ChannelSync {
     private const val CHANNEL_KEY = "netmozi_discover"
-    private const val PER_TYPE = 15
 
     fun schedule(ctx: Context) {
         val network = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
@@ -39,13 +38,16 @@ object ChannelSync {
     }
 
     fun sync(ctx: Context) {
+        Prefs(ctx).applyToTmdb()
         val helper = PreviewChannelHelper(ctx)
         val channelId = helper.allChannels.firstOrNull { it.internalProviderId == CHANNEL_KEY }?.id
             ?: createChannel(ctx, helper)
 
-        val order = runCatching { NetMozi.orders().first().second }.getOrDefault("1")
-        val titles = NetMozi.list(NetMozi.TYPE_MOVIES, order).take(PER_TYPE) +
-            NetMozi.list(NetMozi.TYPE_SERIES, order).take(PER_TYPE)
+        val titles = if (Tmdb.hasKey) {
+            Tmdb.trending(Tmdb.MOVIE).take(12) + runCatching { Tmdb.discover(Tmdb.MOVIE, language = "hi").take(8) }.getOrDefault(emptyList())
+        } else {
+            emptyList()
+        }
 
         ctx.contentResolver.delete(TvContractCompat.buildPreviewProgramsUriForChannel(channelId), null, null)
         helper.publishPreviewProgram(
@@ -54,16 +56,13 @@ object ChannelSync {
         helper.publishPreviewProgram(
             tile(channelId, ctx.getString(R.string.search), resUri(ctx, R.drawable.tile_search), Uri.parse("netmozitv://search"))
         )
-        for (t in titles) {
-            val name = if (t.isSeries) "${t.name} (${ctx.getString(R.string.series_tag)})" else t.name
+        for (m in titles.distinctBy { it.key }) {
+            val poster = m.posterUrl ?: continue
             helper.publishPreviewProgram(
-                tile(channelId, name, Uri.parse(t.thumb), kodiUri(t.kodiPath), t.year)
+                tile(channelId, m.title, Uri.parse(poster), Uri.parse("netmozitv://title?type=${m.type}&id=${m.id}"), m.year)
             )
         }
     }
-
-    fun kodiUri(pluginPath: String): Uri =
-        Uri.Builder().scheme("netmozitv").authority("kodi").appendQueryParameter("path", pluginPath).build()
 
     private fun createChannel(ctx: Context, helper: PreviewChannelHelper): Long {
         val channel = PreviewChannel.Builder()
