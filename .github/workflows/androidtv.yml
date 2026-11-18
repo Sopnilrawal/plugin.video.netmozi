@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: androidtv
@@ -30,3 +32,13 @@ jobs:
         with:
           name: NetMoziTV-apk
           path: androidtv/app/build/outputs/apk/debug/*.apk
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk NetMoziTV.apk
+      # Stable link the Shield can download with the Downloader app.
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: shield-latest
+          name: NetMozi TV (latest build)
+          body: Latest NetMozi TV build for NVIDIA Shield / Android TV. Install with the Downloader app or adb.
+          files: androidtv/NetMoziTV.apk
+          make_latest: true
